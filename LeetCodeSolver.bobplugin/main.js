@@ -2,6 +2,17 @@ var util = require('./util');
 var lc = require('./leetcode');
 var ai = require('./openai');
 
+function toBoolean(value, defaultValue) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'on';
+  return defaultValue;
+}
+
+function toNumber(value, defaultValue) {
+  var n = Number(value);
+  return isNaN(n) ? defaultValue : n;
+}
+
 function supportLanguages() {
   return ['auto', 'zh-Hans', 'en'];
 }
@@ -17,11 +28,11 @@ function translate(query, completion) {
   }
   var apiBaseUrl = options.apiBaseUrl || 'https://api.openai.com';
   var model = options.model || 'gpt-4o-mini';
-  var stream = typeof options.stream === 'boolean' ? options.stream : true;
-  var enableLeetCodeFetch = typeof options.enableLeetCodeFetch === 'boolean' ? options.enableLeetCodeFetch : true;
-  var timeoutSeconds = options.timeoutSeconds || 60;
-  var maxCandidates = options.maxCandidates || 3;
-  var debug = !!options.debug;
+  var stream = toBoolean(options.stream, true);
+  var enableLeetCodeFetch = toBoolean(options.enableLeetCodeFetch, true);
+  var timeoutSeconds = toNumber(options.timeoutSeconds, 60);
+  var maxCandidates = toNumber(options.maxCandidates, 3);
+  var debug = toBoolean(options.debug, false);
 
   var parsed = util.parseInput(query.text);
   util.safeLog(debug, 'parsed input: ' + JSON.stringify(parsed));
