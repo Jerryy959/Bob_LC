@@ -28,6 +28,9 @@ function translate(query, completion) {
   }
   var apiBaseUrl = options.apiBaseUrl || 'https://api.openai.com';
   var model = options.model || 'gpt-4o-mini';
+  var proxyEnabled = toBoolean(options.proxyEnabled, false);
+  var proxyUrl = util.normalizeText(options.proxyUrl);
+  var proxy = proxyEnabled && proxyUrl ? proxyUrl : undefined;
   var stream = toBoolean(options.stream, true);
   var enableLeetCodeFetch = toBoolean(options.enableLeetCodeFetch, true);
   var timeoutSeconds = toNumber(options.timeoutSeconds, 60);
@@ -53,6 +56,7 @@ function translate(query, completion) {
       timeoutSeconds: timeoutSeconds,
       stream: stream && !!query.onStream,
       cancelSignal: query.cancelSignal,
+      proxy: proxy,
       userPrompt: userPrompt,
       onStream: query.onStream
     };
@@ -78,7 +82,7 @@ function translate(query, completion) {
   // Fetch from LeetCode
   if (parsed.type === 'slug') {
     lc
-      .fetchProblemDetails(parsed.value, query.cancelSignal, timeoutSeconds, debug)
+      .fetchProblemDetails(parsed.value, query.cancelSignal, timeoutSeconds, debug, undefined, proxy)
       .then(function (resp) {
         var q = resp.question;
         var content = util.htmlToText(q.translatedContent || q.content, 12000);
@@ -107,9 +111,9 @@ function translate(query, completion) {
 
   if (parsed.type === 'id') {
     lc
-      .resolveById(parsed.value, query.cancelSignal, timeoutSeconds, debug)
+      .resolveById(parsed.value, query.cancelSignal, timeoutSeconds, debug, proxy)
       .then(function (info) {
-        return lc.fetchProblemDetails(info.slug, query.cancelSignal, timeoutSeconds, debug, info.endpoint);
+        return lc.fetchProblemDetails(info.slug, query.cancelSignal, timeoutSeconds, debug, info.endpoint, proxy);
       })
       .then(function (resp) {
         var q = resp.question;
@@ -139,7 +143,7 @@ function translate(query, completion) {
 
   if (parsed.type === 'keyword') {
     lc
-      .searchProblems(parsed.value, query.cancelSignal, timeoutSeconds, maxCandidates, debug)
+      .searchProblems(parsed.value, query.cancelSignal, timeoutSeconds, maxCandidates, debug, proxy)
       .then(function (result) {
         if (!result.list.length) throw util.buildError('notFound', '未找到相关题目');
         var candidate = result.list[0];
@@ -147,7 +151,7 @@ function translate(query, completion) {
           // If multiple candidates, still use first but include list for model disambiguation
           candidate = result.list[0];
         }
-        return lc.fetchProblemDetails(candidate.titleSlug, query.cancelSignal, timeoutSeconds, debug, result.endpoint);
+        return lc.fetchProblemDetails(candidate.titleSlug, query.cancelSignal, timeoutSeconds, debug, result.endpoint, proxy);
       })
       .then(function (resp) {
         var q = resp.question;

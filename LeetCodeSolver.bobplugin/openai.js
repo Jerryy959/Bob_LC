@@ -45,7 +45,8 @@ function nonStreamRequest(options, body, cancelSignal) {
       header: options.headers,
       timeout: options.timeout,
       body: body,
-      cancelSignal: cancelSignal
+      cancelSignal: cancelSignal,
+      proxy: options.proxy
     })
     .then(function (resp) {
       if (resp.statusCode >= 200 && resp.statusCode < 300) {
@@ -65,7 +66,8 @@ function streamRequest(options, body, cancelSignal, onDelta, onError, onFinish) 
       timeout: options.timeout,
       body: body,
       cancelSignal: cancelSignal,
-      streamType: 'sse'
+      streamType: 'sse',
+      proxy: options.proxy
     })
     .then(function (resp) {
       if (resp.statusCode !== 200) {
@@ -124,7 +126,8 @@ function callOpenAI(params) {
   var options = {
     url: params.apiBaseUrl.replace(/\/$/, '') + '/v1/chat/completions',
     headers: createHeaders(params.apiKey),
-    timeout: (params.timeoutSeconds || 60) * 1000
+    timeout: (params.timeoutSeconds || 60) * 1000,
+    proxy: params.proxy
   };
   return new Promise(function (resolve, reject) {
     if (params.stream && params.onStream) {

@@ -39,6 +39,25 @@
       }
     },
     {
+      "identifier": "proxyEnabled",
+      "type": "menu",
+      "title": "启用代理",
+      "defaultValue": "false",
+      "menuValues": [
+        { "title": "开启", "value": "true" },
+        { "title": "关闭", "value": "false" }
+      ]
+    },
+    {
+      "identifier": "proxyUrl",
+      "type": "text",
+      "title": "代理地址",
+      "defaultValue": "http://127.0.0.1:7897",
+      "textConfig": {
+        "placeholderText": "例如 http://127.0.0.1:7897，留空则不走代理"
+      }
+    },
+    {
       "identifier": "stream",
       "type": "menu",
       "title": "开启流式响应",
