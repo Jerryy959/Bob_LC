@@ -20,7 +20,7 @@
     "outputLanguage": "zh",
     "debug": false
   },
-  "options": {
+  "options": [{
     "apiKey": {
       "title": "OpenAI API Key",
       "type": "secure"
@@ -64,6 +64,6 @@
       "title": "Debug Log",
       "type": "boolean",
       "default": false
-    }
+    }]
   }
 }
