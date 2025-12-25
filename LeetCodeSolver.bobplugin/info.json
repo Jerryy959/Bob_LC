@@ -10,6 +10,7 @@
   "summary": "划词生成 LeetCode 中文思路与可提交 C++ 代码",
   "description": "划词解 LeetCode 算法题，自动生成思路与可提交的 C++17 代码。",
   "homepage": "",
+  "debug": true,
   "options": [
     {
       "identifier": "apiKey",
