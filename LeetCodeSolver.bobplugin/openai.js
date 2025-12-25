@@ -22,7 +22,8 @@ function buildSystemPrompt() {
 
 function buildUserPrompt(problemText, meta) {
   var prefix =
-    "请把下面内容当作 LeetCode 算法题进行解答，给出中文思路讲解、可提交的 C++17 代码（class Solution，无 main），以及代码讲解：\n";
+    "请把下面内容当作 LeetCode 算法题进行解答，给出中文思路讲解、可提交的 C++17 代码（class Solution，无 main），以及代码讲解：\n例外情况：如果你发现输入的不是算法题而是选择题或者填空题或者理解代码题，请输出答案和解析";
+
   var metaPart = "";
   if (meta) {
     var parts = [];
