@@ -1,10 +1,15 @@
-var util = require('./util');
-var lc = require('./leetcode');
-var ai = require('./openai');
+var util = require("./util");
+var lc = require("./leetcode");
+var ai = require("./openai");
 
 function toBoolean(value, defaultValue) {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'on';
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string")
+    return (
+      value.toLowerCase() === "true" ||
+      value === "1" ||
+      value.toLowerCase() === "on"
+    );
   return defaultValue;
 }
 
@@ -14,20 +19,21 @@ function toNumber(value, defaultValue) {
 }
 
 function supportLanguages() {
-  return ['auto', 'zh-Hans', 'en'];
+  return ["auto", "zh-Hans", "en"];
 }
 
 function translate(query, completion) {
   var options = $option || {};
   var apiKey = util.normalizeText(options.apiKey);
   if (!apiKey) {
-    var err = util.buildError('secretKey', '请在插件设置中填写 OpenAI API Key');
+    var err = util.buildError("secretKey", "请在插件设置中填写 OpenAI API Key");
     if (query.onCompletion) query.onCompletion({ error: err });
     else completion(err);
     return;
   }
-  var apiBaseUrl = util.normalizeText(options.apiBaseUrl) || 'https://api.openai.com';
-  var model = util.normalizeText(options.model) || 'gpt-4o-mini';
+  var apiBaseUrl =
+    util.normalizeText(options.apiBaseUrl) || "https://api.openai.com";
+  var model = util.normalizeText(options.model) || "gpt-4o-mini";
   var proxyEnabled = toBoolean(options.proxyEnabled, false);
   var proxyUrl = util.normalizeText(options.proxyUrl);
   var proxy = proxyEnabled && proxyUrl ? proxyUrl : undefined;
@@ -38,10 +44,10 @@ function translate(query, completion) {
   var debug = toBoolean(options.debug, false);
 
   var parsed = util.parseInput(query.text);
-  util.safeLog(debug, 'parsed input: ' + JSON.stringify(parsed));
+  util.safeLog(debug, "parsed input: " + JSON.stringify(parsed));
 
-  if (parsed.type === 'empty') {
-    var errEmpty = util.buildError('param', '未检测到内容');
+  if (parsed.type === "empty") {
+    var errEmpty = util.buildError("param", "未检测到内容");
     if (query.onCompletion) query.onCompletion({ error: errEmpty });
     else completion(errEmpty);
     return;
@@ -58,31 +64,41 @@ function translate(query, completion) {
       cancelSignal: query.cancelSignal,
       proxy: proxy,
       userPrompt: userPrompt,
-      onStream: query.onStream
+      onStream: query.onStream,
     };
-    ai
-      .callOpenAI(params)
+    ai.callOpenAI(params)
       .then(function (result) {
-        var res = { result: { toParagraphs: result.toParagraphs, raw: result.raw } };
+        var res = {
+          result: { toParagraphs: result.toParagraphs, raw: result.raw },
+        };
         if (query.onCompletion) query.onCompletion(res);
         else completion(null, res.result);
       })
       .catch(function (err) {
-        var out = err && err.type ? err : util.buildError('unknown', err.message || '生成失败');
+        var out =
+          err && err.type
+            ? err
+            : util.buildError("unknown", err.message || "生成失败");
         if (query.onCompletion) query.onCompletion({ error: out });
         else completion(out);
       });
   }
 
-  if (!enableLeetCodeFetch || parsed.type === 'statement') {
+  if (!enableLeetCodeFetch || parsed.type === "statement") {
     proceedWithProblem(util.normalizeText(query.text), {});
     return;
   }
 
   // Fetch from LeetCode
-  if (parsed.type === 'slug') {
-    lc
-      .fetchProblemDetails(parsed.value, query.cancelSignal, timeoutSeconds, debug, undefined, proxy)
+  if (parsed.type === "slug") {
+    lc.fetchProblemDetails(
+      parsed.value,
+      query.cancelSignal,
+      timeoutSeconds,
+      debug,
+      undefined,
+      proxy
+    )
       .then(function (resp) {
         var q = resp.question;
         var content = util.htmlToText(q.translatedContent || q.content, 12000);
@@ -93,27 +109,42 @@ function translate(query, completion) {
           tags: (q.topicTags || []).map(function (t) {
             return t.name;
           }),
-          examples: util.normalizeText(q.exampleTestcases || ''),
-          constraints: util.normalizeText(q.constraints || '')
+          examples: util.normalizeText(q.exampleTestcases || ""),
+          constraints: util.normalizeText(q.constraints || ""),
         };
         var problemText = content;
-        if (meta.examples) problemText += '\n示例：\n' + meta.examples;
-        if (meta.constraints) problemText += '\n约束：\n' + meta.constraints;
+        if (meta.examples) problemText += "\n示例：\n" + meta.examples;
+        if (meta.constraints) problemText += "\n约束：\n" + meta.constraints;
         proceedWithProblem(problemText, meta);
       })
       .catch(function (err) {
-        var out = err && err.type ? err : util.buildError('unknown', err.message || '拉取题目失败');
+        var out =
+          err && err.type
+            ? err
+            : util.buildError("unknown", err.message || "拉取题目失败");
         if (query.onCompletion) query.onCompletion({ error: out });
         else completion(out);
       });
     return;
   }
 
-  if (parsed.type === 'id') {
-    lc
-      .resolveById(parsed.value, query.cancelSignal, timeoutSeconds, debug, proxy)
+  if (parsed.type === "id") {
+    lc.resolveById(
+      parsed.value,
+      query.cancelSignal,
+      timeoutSeconds,
+      debug,
+      proxy
+    )
       .then(function (info) {
-        return lc.fetchProblemDetails(info.slug, query.cancelSignal, timeoutSeconds, debug, info.endpoint, proxy);
+        return lc.fetchProblemDetails(
+          info.slug,
+          query.cancelSignal,
+          timeoutSeconds,
+          debug,
+          info.endpoint,
+          proxy
+        );
       })
       .then(function (resp) {
         var q = resp.question;
@@ -125,33 +156,60 @@ function translate(query, completion) {
           tags: (q.topicTags || []).map(function (t) {
             return t.name;
           }),
-          examples: util.normalizeText(q.exampleTestcases || ''),
-          constraints: util.normalizeText(q.constraints || '')
+          examples: util.normalizeText(q.exampleTestcases || ""),
+          constraints: util.normalizeText(q.constraints || ""),
         };
         var problemText = content;
-        if (meta.examples) problemText += '\n示例：\n' + meta.examples;
-        if (meta.constraints) problemText += '\n约束：\n' + meta.constraints;
+        if (meta.examples) problemText += "\n示例：\n" + meta.examples;
+        if (meta.constraints) problemText += "\n约束：\n" + meta.constraints;
         proceedWithProblem(problemText, meta);
       })
       .catch(function (err) {
-        var out = err && err.type ? err : util.buildError('unknown', err.message || '拉取题目失败');
+        var out =
+          err && err.type
+            ? err
+            : util.buildError("unknown", err.message || "拉取题目失败");
         if (query.onCompletion) query.onCompletion({ error: out });
         else completion(out);
       });
     return;
   }
 
-  if (parsed.type === 'keyword') {
-    lc
-      .searchProblems(parsed.value, query.cancelSignal, timeoutSeconds, maxCandidates, debug, proxy)
+  if (parsed.type === "keyword") {
+    // 如果输入很短（例如 ≤ 8 个字符），直接当作题目描述发给 AI，不尝试搜索
+    if (parsed.value.length <= 8) {
+      util.safeLog(debug, "输入过短，直接使用原始文本作为题目");
+      proceedWithProblem(util.normalizeText(query.text), {});
+      return;
+    }
+    lc.searchProblems(
+      parsed.value,
+      query.cancelSignal,
+      timeoutSeconds,
+      maxCandidates,
+      debug,
+      proxy
+    )
       .then(function (result) {
-        if (!result.list.length) throw util.buildError('notFound', '未找到相关题目');
+        if (!result.list.length) {
+          // 搜索不到，也直接用原始输入走 Prompt，而不是报错
+          util.safeLog(debug, "LeetCode 未搜到题目，直接使用原始文本");
+          proceedWithProblem(util.normalizeText(query.text), {});
+          return;
+        }
         var candidate = result.list[0];
         if (result.list.length > 1 && parsed.value.length > 2) {
           // If multiple candidates, still use first but include list for model disambiguation
           candidate = result.list[0];
         }
-        return lc.fetchProblemDetails(candidate.titleSlug, query.cancelSignal, timeoutSeconds, debug, result.endpoint, proxy);
+        return lc.fetchProblemDetails(
+          candidate.titleSlug,
+          query.cancelSignal,
+          timeoutSeconds,
+          debug,
+          result.endpoint,
+          proxy
+        );
       })
       .then(function (resp) {
         var q = resp.question;
@@ -163,18 +221,21 @@ function translate(query, completion) {
           tags: (q.topicTags || []).map(function (t) {
             return t.name;
           }),
-          examples: util.normalizeText(q.exampleTestcases || ''),
-          constraints: util.normalizeText(q.constraints || '')
+          examples: util.normalizeText(q.exampleTestcases || ""),
+          constraints: util.normalizeText(q.constraints || ""),
         };
         var problemText = content;
-        if (meta.examples) problemText += '\n示例：\n' + meta.examples;
-        if (meta.constraints) problemText += '\n约束：\n' + meta.constraints;
+        if (meta.examples) problemText += "\n示例：\n" + meta.examples;
+        if (meta.constraints) problemText += "\n约束：\n" + meta.constraints;
         proceedWithProblem(problemText, meta);
       })
       .catch(function (err) {
-        var out = err && err.type ? err : util.buildError('unknown', err.message || '检索题目失败');
-        if (query.onCompletion) query.onCompletion({ error: out });
-        else completion(out);
+        // 搜索或拉取失败时，不抛错，而是用原始输入继续
+        util.safeLog(
+          debug,
+          "LeetCode 搜索/拉取失败，回退到原始文本: " + err.message
+        );
+        proceedWithProblem(util.normalizeText(query.text), {});
       });
     return;
   }
@@ -185,5 +246,5 @@ function translate(query, completion) {
 
 module.exports = {
   supportLanguages: supportLanguages,
-  translate: translate
+  translate: translate,
 };
