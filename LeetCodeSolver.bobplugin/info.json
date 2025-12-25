@@ -40,15 +40,23 @@
     },
     {
       "identifier": "stream",
-      "type": "checkbox",
+      "type": "menu",
       "title": "开启流式响应",
-      "defaultValue": true
+      "defaultValue": "true",
+      "menuValues": [
+        { "title": "开启", "value": "true" },
+        { "title": "关闭", "value": "false" }
+      ]
     },
     {
       "identifier": "enableLeetCodeFetch",
-      "type": "checkbox",
+      "type": "menu",
       "title": "启用 LeetCode 题面拉取",
-      "defaultValue": true
+      "defaultValue": "true",
+      "menuValues": [
+        { "title": "开启", "value": "true" },
+        { "title": "关闭", "value": "false" }
+      ]
     },
     {
       "identifier": "timeoutSeconds",
@@ -80,9 +88,13 @@
     },
     {
       "identifier": "debug",
-      "type": "checkbox",
+      "type": "menu",
       "title": "调试日志",
-      "defaultValue": false
+      "defaultValue": "false",
+      "menuValues": [
+        { "title": "开启", "value": "true" },
+        { "title": "关闭", "value": "false" }
+      ]
     }
   ]
 }
