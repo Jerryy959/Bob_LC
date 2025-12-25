@@ -19,15 +19,15 @@ function supportLanguages() {
 
 function translate(query, completion) {
   var options = $option || {};
-  var apiKey = options.apiKey;
+  var apiKey = util.normalizeText(options.apiKey);
   if (!apiKey) {
     var err = util.buildError('secretKey', '请在插件设置中填写 OpenAI API Key');
     if (query.onCompletion) query.onCompletion({ error: err });
     else completion(err);
     return;
   }
-  var apiBaseUrl = options.apiBaseUrl || 'https://api.openai.com';
-  var model = options.model || 'gpt-4o-mini';
+  var apiBaseUrl = util.normalizeText(options.apiBaseUrl) || 'https://api.openai.com';
+  var model = util.normalizeText(options.model) || 'gpt-4o-mini';
   var proxyEnabled = toBoolean(options.proxyEnabled, false);
   var proxyUrl = util.normalizeText(options.proxyUrl);
   var proxy = proxyEnabled && proxyUrl ? proxyUrl : undefined;

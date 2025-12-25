@@ -30,11 +30,30 @@ function buildUserPrompt(problemText, meta) {
   return prefix + metaPart + '题目文本：\n' + problemText;
 }
 
-function createHeaders(apiKey) {
-  return {
+function createHeaders(apiKey, isStream) {
+  var headers = {
     'Content-Type': 'application/json',
     Authorization: 'Bearer ' + apiKey
   };
+  if (isStream) headers.Accept = 'text/event-stream';
+  return headers;
+}
+
+function pickData(resp) {
+  // Bob 在不同版本下可能使用 data 或 body 存放 JSON/string
+  if (typeof resp.data !== 'undefined') return resp.data;
+  return resp.body;
+}
+
+function parseApiError(resp) {
+  try {
+    var data = pickData(resp);
+    if (data && data.error && data.error.message) return data.error.message;
+    if (typeof data === 'string') return data.slice(0, 500);
+  } catch (e) {
+    // ignore
+  }
+  return '';
 }
 
 function nonStreamRequest(options, body, cancelSignal) {
@@ -50,9 +69,11 @@ function nonStreamRequest(options, body, cancelSignal) {
     })
     .then(function (resp) {
       if (resp.statusCode >= 200 && resp.statusCode < 300) {
-        return resp.data;
+        return pickData(resp);
       }
-      throw util.buildError('network', '接口请求失败', 'status: ' + resp.statusCode + ', body: ' + JSON.stringify(resp.data || resp.body));
+      var addition = 'status: ' + resp.statusCode + ', body: ' + JSON.stringify(pickData(resp));
+      var apiMsg = parseApiError(resp);
+      throw util.buildError('network', apiMsg || '接口请求失败', addition);
     });
 }
 
@@ -71,9 +92,9 @@ function streamRequest(options, body, cancelSignal, onDelta, onError, onFinish) 
     })
     .then(function (resp) {
       if (resp.statusCode !== 200) {
-        onError(
-          util.buildError('network', '接口请求失败', 'status: ' + resp.statusCode + ', body: ' + JSON.stringify(resp.data || resp.body))
-        );
+        var addition = 'status: ' + resp.statusCode + ', body: ' + JSON.stringify(pickData(resp));
+        var apiMsg = parseApiError(resp);
+        onError(util.buildError('network', apiMsg || '接口请求失败', addition));
         return;
       }
       resp.on('data', function (chunk) {
@@ -125,7 +146,7 @@ function callOpenAI(params) {
   };
   var options = {
     url: params.apiBaseUrl.replace(/\/$/, '') + '/v1/chat/completions',
-    headers: createHeaders(params.apiKey),
+    headers: createHeaders(params.apiKey, params.stream),
     timeout: (params.timeoutSeconds || 60) * 1000,
     proxy: params.proxy
   };
@@ -144,6 +165,13 @@ function callOpenAI(params) {
     } else {
       nonStreamRequest(options, body, params.cancelSignal)
         .then(function (data) {
+          if (typeof data === 'string') {
+            try {
+              data = JSON.parse(data);
+            } catch (e) {
+              // keep raw string
+            }
+          }
           var content = '';
           try {
             content = (((data || {}).choices || [])[0] || {}).message || {};
